@@ -22,11 +22,11 @@ async function generateSummary(
     text = trimTokens(text, 100000, "gpt-4o-mini"); // TODO: clean this up
 
     const prompt = `Please generate a concise summary for the following text:
-  
+
   Text: """
   ${text}
   """
-  
+
   Respond with a JSON object in the following format:
   \`\`\`json
   {
@@ -91,7 +91,10 @@ export class AttachmentManager {
         let media: Media | null = null;
         if (attachment.contentType?.startsWith("application/pdf")) {
             media = await this.processPdfAttachment(attachment);
-        } else if (attachment.contentType?.startsWith("text/plain")) {
+        } else if (
+            attachment.contentType?.startsWith("text/plain") ||
+            attachment.name?.match(/\.(txt|g|gcode)$/i) // Treat gcode as plain text attachment
+        ) {
             media = await this.processPlaintextAttachment(attachment);
         } else if (
             attachment.contentType?.startsWith("audio/") ||
