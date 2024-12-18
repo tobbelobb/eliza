@@ -12,6 +12,8 @@ import {
     ModelClass,
     State,
 } from "@ai16z/eliza";
+import * as fs from 'fs';
+
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
 {{currentSummary}}
 
@@ -22,7 +24,7 @@ Summarization objective: {{objective}}
 
 # Instructions: Summarize the attachments. Return the summary. Do not acknowledge this request, just summarize and continue the existing summary if there is one. Capture any important details based on the objective. Only respond with the new summary text.`;
 
-export const attachmentIdsTemplate = `# Messages we are summarizing 
+export const attachmentIdsTemplate = `# Messages we are summarizing
 {{recentMessages}}
 
 # Instructions: {{senderName}} is requesting a summary of specific attachments. Your goal is to determine their objective, along with the list of attachment IDs to summarize.
@@ -216,7 +218,7 @@ const summarizeAction = {
         if (
             callbackData.text &&
             (currentSummary.trim()?.split("\n").length < 4 ||
-                currentSummary.trim()?.split(" ").length < 100)
+                currentSummary.trim()?.split(" ").length < 200)
         ) {
             callbackData.text = `Here is the summary:
 \`\`\`md
@@ -225,16 +227,35 @@ ${currentSummary.trim()}
 `;
             await callback(callbackData);
         } else if (currentSummary.trim()) {
-            const summaryFilename = `content/summary_${Date.now()}`;
-            await runtime.cacheManager.set(summaryFilename, currentSummary);
-            // save the summary to a file
-            await callback(
-                {
-                    ...callbackData,
-                    text: `I've attached the summary of the requested attachments as a text file.`,
-                },
-                [summaryFilename]
-            );
+            const summaryFilename = `content/summary_${Date.now()}.md`;
+
+            try {
+                // Debug: Log before file operations
+                console.log("Creating summary file:", {
+                    filename: summaryFilename,
+                    summaryLength: currentSummary.length
+                });
+
+                // Write file directly first
+                await fs.promises.writeFile(summaryFilename, currentSummary, 'utf8');
+                console.log("File written successfully");
+
+                // Then cache it
+                await runtime.cacheManager.set(summaryFilename, currentSummary);
+                console.log("Cache set operation completed");
+
+                await callback(
+                    {
+                        ...callbackData,
+                        text: `I've attached the summary of the requested attachments as a text file.`,
+                    },
+                    [summaryFilename]
+                );
+                console.log("Callback completed with summary file");
+            } catch (error) {
+                console.error("Error in file/cache process:", error);
+                throw error;
+            }
         } else {
             console.warn(
                 "Empty response from chat with attachments action, skipping"
