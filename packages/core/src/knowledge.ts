@@ -61,7 +61,14 @@ async function get(
 
     return knowledgeDocuments
         .filter((memory) => memory !== null)
-        .map((memory) => ({ id: memory.id, content: memory.content }));
+        .map((memory) => {
+            const fragment = fragments.find(f => f.content.source === memory.id);
+            return {
+                id: memory.id,
+                content: memory.content,
+                similarity: fragment?.similarity || 0
+            };
+        });
 }
 
 async function set(
