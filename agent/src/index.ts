@@ -215,6 +215,7 @@ export function getTokenForProvider(
     switch (provider) {
         // no key needed for llama_local
         case ModelProviderName.LLAMALOCAL:
+        case ModelProviderName.OLLAMA:
             return ''
         case ModelProviderName.OPENAI:
             return (
