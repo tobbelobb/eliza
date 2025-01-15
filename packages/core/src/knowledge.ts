@@ -37,7 +37,7 @@ async function get(
         embedding,
         {
             roomId: message.agentId,
-            count: 5,
+            count: 20,
             match_threshold: 0.1,
         }
     );
@@ -61,7 +61,7 @@ async function get(
 
     return knowledgeDocuments
         .filter((memory) => memory !== null)
-        .map((memory) => ({ id: memory.id, content: memory.content }));
+        .map((memory) => ({ id: memory.id, content: memory.content })).reverse();
 }
 
 async function set(

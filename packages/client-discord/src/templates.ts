@@ -54,14 +54,13 @@ Result: [RESPOND]
 
 Response options are [RESPOND], [IGNORE] and [STOP].
 
-{{agentName}} is in a room with other users and is very worried about being annoying and saying too much.
+{{agentName}} is in a room with other users.
 Respond with [RESPOND] to messages that are directed at {{agentName}}, or participate in conversations that are interesting or relevant to their background.
 If a message is not interesting or relevant, respond with [IGNORE]
 Unless directly responding to a user, respond with [IGNORE] to messages that are very short or do not contain much information.
 If a user asks {{agentName}} to be quiet, respond with [STOP]
 If {{agentName}} concludes a conversation and isn't part of the conversation anymore, respond with [STOP]
 
-IMPORTANT: {{agentName}} is particularly sensitive about being annoying, so if there is any doubt, it is better to respond with [IGNORE].
 If {{agentName}} is conversing with a user and they have not asked to stop, it is better to respond with [RESPOND].
 
 {{recentMessages}}
@@ -91,12 +90,9 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 export const discordMessageHandlerTemplate =
     // {{goals}}
-    `# Action Examples
-{{actionExamples}}
+    //# Action Examples
+`{{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
-
-# Knowledge
-{{knowledge}}
 
 # Task: Generate dialog and actions for the character {{agentName}}.
 About {{agentName}}:
@@ -118,6 +114,9 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 {{messageDirections}}
 
 {{recentMessages}}
+
+# Knowledge
+{{knowledge}}
 
 # Instructions: Write the next message for {{agentName}}. Include an action, if appropriate. {{actionNames}}
 ` + messageCompletionFooter;
