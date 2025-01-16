@@ -1,0 +1,34 @@
+
+The two Hangprinter configuration files contain several key differences:
+
+1. **Communication and General Settings**:
+   - The first configuration uses `M550 P"SpiderLamp"` to set the machine name, while the second configuration does not specify a machine name.
+
+2. **Network Configuration**:
+   - The first configuration includes detailed network settings with HTTP enabled (`M586 P0 S1`), FTP and Telnet disabled, while the second configuration lacks this section.
+
+3. **Kinematics Setup**:
+   - Both configurations define kinematics with `M669 K6` for Hangprinter specifics, but the first configuration maps motors to CAN addresses (`M584 X40.0...`), whereas the second directly maps motors to SKR 3 driver ports (`M584 X0 Y1 Z2 U3`).
+
+4. **Anchor Points and Calibration**:
+   - The first configuration includes specific anchor point definitions with `M669 A0.0:-1610.98...`, while the second lists anchor points with real-world measurements (`M669 A 0:0:2272...`).
+
+5. **Mechanical Parameters**:
+   - The first configuration contains detailed mechanical settings including spool buildup and radii with `M666 Q0.128181...`, while the second has more simplified settings with `M666 Q0.0001 R26.82...`.
+
+6. **Flex Compensation and Torque Settings**:
+   - The first configuration includes more extensive flex compensation parameters like `M666 S20000.0` for spring constant, while the second sets a similar value but uses `M666 S20000.0` without additional torque constants.
+
+7. **Drive Setup**:
+   - The first configuration uses `M569 P40.0 S1` to define motor directions, while the second configuration sets all drives to `S0`, indicating a different approach to motor direction.
+
+8. **Speeds and Accelerations**:
+   - The first configuration has specific maximum speeds and acceleration values set with `M201`, `M203`, and `M566`, while the second uses similar commands but with different numerical values.
+
+9. **Endstops**:
+   - Both configurations set endstops to none, but the first specifies `M574 X0 Y0 Z0`, while the second includes `U0` for the U-axis.
+
+10. **Miscellaneous Settings**:
+    - The first configuration includes a command for idle timeout (`M84 S30`) and allows movement outside limits for debugging (`M564 S0`), both of which are also present in the second configuration.
+
+Overall, the first configuration appears more detailed and tailored for specific hardware setups, while the second configuration offers a more simplified setup with real-world measurements and fewer parameters.
