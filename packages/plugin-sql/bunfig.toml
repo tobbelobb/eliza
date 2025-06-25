@@ -8,3 +8,4 @@ coverage = true
 coverage-exclude = [
   "**/dist/**",
 ]
+smol = true

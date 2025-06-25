@@ -16,3 +16,4 @@ coverage-exclude = [
   "**/coverage/**",
   "**/.turbo/**",
 ]
+smol = true

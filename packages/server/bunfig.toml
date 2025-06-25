@@ -18,3 +18,4 @@ env = "node"
 coverage-exclude = [
   "**/dist/**",
 ]
+smol = true

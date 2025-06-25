@@ -8,3 +8,4 @@ NODE_ENV = "test"
 coverage-exclude = [
   "**/dist/**",
 ]
+smol = true
