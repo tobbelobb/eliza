@@ -4,6 +4,6 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "elizaos start"
+    "startCommand": "bun run start"
   }
 }
