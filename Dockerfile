@@ -1,63 +1,38 @@
-FROM node:23.3.0-slim AS builder
-
+################  1) Build  ################
+FROM oven/bun:1.2.5-slim AS builder
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    ffmpeg \
-    g++ \
-    git \
-    make \
-    python3 \
-    unzip && \
-    apt-get clean && \
+# (Keep build tools here only)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential git python3 && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g bun@1.2.5 turbo@2.3.3
-
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-COPY package.json turbo.json tsconfig.json lerna.json renovate.json .npmrc ./
-COPY scripts ./scripts
+COPY package.json bun.lockb tsconfig.json turbo.json lerna.json ./
 COPY packages ./packages
+RUN bun install --frozen-lockfile      # dev deps OK in builder
+RUN bun run build                      # writes packages/*/dist
 
-RUN bun install --no-cache
-
-RUN bun run build
-
-FROM node:23.3.0-slim
+################  2) Runtime  ################
+FROM oven/bun:1.2.5-slim  # 48 MB base
 
 WORKDIR /app
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    ffmpeg \
-    git \
-    python3 \
-    unzip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN npm install -g bun@1.2.5 turbo@2.3.3 \
- && bun install -g @elizaos/cli
-
-ENV PATH="/root/.bun/bin:${PATH}"
-
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/turbo.json ./
-COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/lerna.json ./
-COPY --from=builder /app/renovate.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/scripts ./scripts
-
 ENV NODE_ENV=production
 
-EXPOSE 3000
-EXPOSE 50000-50100/udp
+# Runtime needs only curl + ffmpeg? install them, nothing else:
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
+# production deps only (no TypeScript, etc.)
+COPY package.json bun.lockb ./
+RUN bun install --production --no-cache
+
+# copy the built artefacts, not full source tree
+COPY --from=builder /app/packages/*/dist ./packages/
+COPY --from=builder /app/scripts ./scripts
+
+# CLI (adds just a few MB)
+RUN bun install -g @elizaos/cli
+
+EXPOSE 3000 50000-50100/udp
 CMD ["elizaos", "start"]
