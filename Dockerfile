@@ -25,8 +25,6 @@ COPY packages ./packages
 
 RUN bun install --no-cache
 
-RUN bun install -g @elizaos/cli
-
 RUN bun run build
 
 FROM node:23.3.0-slim
@@ -43,7 +41,10 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g bun@1.2.5 turbo@2.3.3
+RUN npm install -g bun@1.2.5 turbo@2.3.3 \
+ && bun install -g @elizaos/cli
+
+ENV PATH="/root/.bun/bin:${PATH}"
 
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/turbo.json ./
