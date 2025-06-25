@@ -4,6 +4,6 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "NODE_OPTIONS=--max-old-space-size=999 elizaos start"
+    "startCommand": "elizaos start"
   }
 }
