@@ -25,6 +25,8 @@ COPY packages ./packages
 
 RUN bun install --no-cache
 
+RUN bun install -g @elizaos/cli
+
 RUN bun run build
 
 FROM node:23.3.0-slim
@@ -57,4 +59,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 EXPOSE 50000-50100/udp
 
-CMD ["bun", "run", "start"]
+CMD ["elizaos", "start"]
