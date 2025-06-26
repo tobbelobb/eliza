@@ -25,7 +25,7 @@ export const start = new Command()
   .hook('preAction', async () => {
     await displayBanner();
     const INTERVAL_MS = 600_000;
-    
+
     // CRITICAL FIX: Store timer reference for cleanup
     const gcInterval = setInterval(() => {
       if (typeof Bun !== 'undefined' && Bun.gc) {
@@ -38,7 +38,7 @@ export const start = new Command()
         logger.info({ rss: process.memoryUsage().rss }, 'manual GC tick');
       }
     }, INTERVAL_MS);
-    
+
     // CRITICAL FIX: Clean up timer on process exit
     const cleanup = () => {
       if (gcInterval) {
@@ -46,7 +46,7 @@ export const start = new Command()
         logger.info('[MEMORY DEBUG] Cleared global GC interval timer');
       }
     };
-    
+
     process.on('SIGTERM', cleanup);
     process.on('SIGINT', cleanup);
     process.on('beforeExit', cleanup);

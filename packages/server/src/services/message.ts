@@ -58,15 +58,17 @@ export class MessageBusService extends Service {
       const existingService = MessageBusService.instances.get(runtime.agentId);
       await existingService!.stop();
       MessageBusService.instances.delete(runtime.agentId);
-      logger.info(`[${runtime.character.name}] MessageBusService: Cleaned up existing instance before restart`);
+      logger.info(
+        `[${runtime.character.name}] MessageBusService: Cleaned up existing instance before restart`
+      );
     }
 
     const service = new MessageBusService(runtime);
     await service.connectToMessageBus();
-    
+
     // Store the instance for proper cleanup
     MessageBusService.instances.set(runtime.agentId, service);
-    
+
     return service;
   }
 
@@ -75,9 +77,13 @@ export class MessageBusService extends Service {
     if (service) {
       await service.stop();
       MessageBusService.instances.delete(runtime.agentId);
-      logger.info(`[${runtime.character.name}] MessageBusService: Properly stopped and removed instance for agent ${runtime.agentId}`);
+      logger.info(
+        `[${runtime.character.name}] MessageBusService: Properly stopped and removed instance for agent ${runtime.agentId}`
+      );
     } else {
-      logger.warn(`[${runtime.character.name}] MessageBusService: No instance found to stop for agent ${runtime.agentId}`);
+      logger.warn(
+        `[${runtime.character.name}] MessageBusService: No instance found to stop for agent ${runtime.agentId}`
+      );
     }
   }
 
@@ -101,10 +107,12 @@ export class MessageBusService extends Service {
   private async fetchValidChannelIds(): Promise<void> {
     // Prevent concurrent calls to avoid race conditions and memory issues
     if (this.fetchingChannelIds) {
-      logger.debug(`[${this.runtime.character.name}] MessageBusService: fetchValidChannelIds already in progress, skipping`);
+      logger.debug(
+        `[${this.runtime.character.name}] MessageBusService: fetchValidChannelIds already in progress, skipping`
+      );
       return;
     }
-    
+
     this.fetchingChannelIds = true;
     try {
       const serverApiUrl = this.getCentralMessageServerUrl();
@@ -792,18 +800,20 @@ export class MessageBusService extends Service {
 
   async stop(): Promise<void> {
     logger.info(`[${this.runtime.character.name}] MessageBusService stopping...`);
-    
+
     // Remove all event listeners using the SAME bound method references
     internalMessageBus.off('new_message', this.boundHandleIncomingMessage);
     internalMessageBus.off('server_agent_update', this.boundHandleServerAgentUpdate);
     internalMessageBus.off('message_deleted', this.boundHandleMessageDeleted);
     internalMessageBus.off('channel_cleared', this.boundHandleChannelCleared);
-    
+
     // Clear all data structures to free memory
     this.subscribedServers.clear();
     this.validChannelIds.clear();
-    
-    logger.info(`[${this.runtime.character.name}] MessageBusService stopped and cleaned up data structures`);
+
+    logger.info(
+      `[${this.runtime.character.name}] MessageBusService stopped and cleaned up data structures`
+    );
   }
 }
 

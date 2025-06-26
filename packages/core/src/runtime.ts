@@ -89,7 +89,7 @@ export class AgentRuntime implements IAgentRuntime {
       text: string;
     }
   >();
-  private readonly STATE_CACHE_MAX_SIZE = 1000; // Limit cache to 1000 entries
+  private readonly STATE_CACHE_MAX_SIZE = 100; // Limit cache to 100 entries for aggressive memory management
   readonly fetch = fetch;
   services = new Map<ServiceTypeName, Service>();
   private serviceTypes = new Map<ServiceTypeName, typeof Service>();
@@ -202,16 +202,25 @@ export class AgentRuntime implements IAgentRuntime {
    * Start periodic cleanup of state cache for idle memory management
    */
   private startStateCacheCleanup(): void {
-    // Run cleanup every 2 minutes for more aggressive memory management
+    // Prevent multiple timers for the same runtime instance
+    if (this.stateCacheCleanupInterval) {
+      clearInterval(this.stateCacheCleanupInterval);
+      this.stateCacheCleanupInterval = undefined;
+    }
+
+    // Run cleanup every 30 seconds for more aggressive memory management
     this.stateCacheCleanupInterval = setInterval(async () => {
       try {
         const memBefore = process.memoryUsage();
-        this.logger.info(`[MEMORY DEBUG] Starting cleanup cycle - RSS: ${Math.round(memBefore.rss / 1024 / 1024)}MB, Heap: ${Math.round(memBefore.heapUsed / 1024 / 1024)}MB`);
-        
+        this.logger.info(
+          `[MEMORY DEBUG] Starting cleanup cycle - RSS: ${Math.round(memBefore.rss / 1024 / 1024)}MB, Heap: ${Math.round(memBefore.heapUsed / 1024 / 1024)}MB`
+        );
+
         // More aggressive state cache cleanup - always clean if we have entries
         const initialCacheSize = this.stateCache.size;
-        if (this.stateCache.size > 50) { // Lower threshold
-          const entriesToRemove = Math.floor(this.stateCache.size * 0.3); // Remove 30% more aggressively
+        if (this.stateCache.size > 20) {
+          // Much lower threshold
+          const entriesToRemove = Math.floor(this.stateCache.size * 0.5); // Remove 50% more aggressively
           const keysToRemove = Array.from(this.stateCache.keys()).slice(0, entriesToRemove);
           keysToRemove.forEach((key) => this.stateCache.delete(key));
 
@@ -230,7 +239,10 @@ export class AgentRuntime implements IAgentRuntime {
 
         // Clean up old embeddings (keep 3 days instead of 7 for more aggressive cleanup)
         if (this.adapter && typeof (this.adapter as any).cleanupOldEmbeddings === 'function') {
-          const embeddingsDeleted = await (this.adapter as any).cleanupOldEmbeddings(this.agentId, 3);
+          const embeddingsDeleted = await (this.adapter as any).cleanupOldEmbeddings(
+            this.agentId,
+            3
+          );
           if (embeddingsDeleted > 0) {
             this.logger.info(`[MEMORY DEBUG] Cleaned up ${embeddingsDeleted} old embeddings`);
           }
@@ -238,7 +250,7 @@ export class AgentRuntime implements IAgentRuntime {
 
         // Clear any accumulated context that might be holding references
         this.currentActionContext = undefined;
-        
+
         // Force garbage collection if available
         if (typeof global.gc === 'function') {
           global.gc();
@@ -251,12 +263,14 @@ export class AgentRuntime implements IAgentRuntime {
         const memAfter = process.memoryUsage();
         const rssDiff = memAfter.rss - memBefore.rss;
         const heapDiff = memAfter.heapUsed - memBefore.heapUsed;
-        
-        this.logger.info(`[MEMORY DEBUG] Cleanup complete - RSS: ${Math.round(memAfter.rss / 1024 / 1024)}MB (${rssDiff > 0 ? '+' : ''}${Math.round(rssDiff / 1024 / 1024)}MB), Heap: ${Math.round(memAfter.heapUsed / 1024 / 1024)}MB (${heapDiff > 0 ? '+' : ''}${Math.round(heapDiff / 1024 / 1024)}MB)`);
+
+        this.logger.info(
+          `[MEMORY DEBUG] Cleanup complete - RSS: ${Math.round(memAfter.rss / 1024 / 1024)}MB (${rssDiff > 0 ? '+' : ''}${Math.round(rssDiff / 1024 / 1024)}MB), Heap: ${Math.round(memAfter.heapUsed / 1024 / 1024)}MB (${heapDiff > 0 ? '+' : ''}${Math.round(heapDiff / 1024 / 1024)}MB)`
+        );
       } catch (error) {
         this.logger.error('Error during periodic cleanup:', error);
       }
-    }, 120000); // 2 minutes instead of 5
+    }, 30000); // 30 seconds for aggressive cleanup
   }
 
   async registerPlugin(plugin: Plugin): Promise<void> {
@@ -362,14 +376,16 @@ export class AgentRuntime implements IAgentRuntime {
 
   async stop() {
     this.logger.debug(`runtime::stop - character ${this.character.name}`);
-    
+
     // CRITICAL FIX: Clear the memory cleanup interval timer
     if (this.stateCacheCleanupInterval) {
       clearInterval(this.stateCacheCleanupInterval);
       this.stateCacheCleanupInterval = undefined;
-      this.logger.info(`[MEMORY DEBUG] Cleared cleanup interval timer for agent ${this.character.name}`);
+      this.logger.info(
+        `[MEMORY DEBUG] Cleared cleanup interval timer for agent ${this.character.name}`
+      );
     }
-    
+
     for (const [serviceName, service] of this.services) {
       this.logger.debug(`runtime::stop - requesting service stop for ${serviceName}`);
       await service.stop();
@@ -1187,8 +1203,8 @@ export class AgentRuntime implements IAgentRuntime {
 
     // Implement LRU-style cache cleanup to prevent unbounded memory growth
     if (this.stateCache.size >= this.STATE_CACHE_MAX_SIZE) {
-      // Remove oldest entries (first 100 entries) when cache is full
-      const entriesToRemove = Math.floor(this.STATE_CACHE_MAX_SIZE * 0.1);
+      // Remove 50% of entries when cache is full for aggressive cleanup
+      const entriesToRemove = Math.floor(this.STATE_CACHE_MAX_SIZE * 0.5);
       const keysToRemove = Array.from(this.stateCache.keys()).slice(0, entriesToRemove);
       keysToRemove.forEach((key) => this.stateCache.delete(key));
     }
@@ -1523,15 +1539,11 @@ export class AgentRuntime implements IAgentRuntime {
     // Stop all services to clean up timers, intervals, and other resources
     await this.stop();
 
-    // Stop state cache cleanup interval
-    if (this.stateCacheCleanupInterval) {
-      clearInterval(this.stateCacheCleanupInterval);
-      this.stateCacheCleanupInterval = undefined;
-    }
-
     // Clear memory caches to prevent accumulation
     this.stateCache.clear();
     this.eventHandlers.clear();
+    this.events.clear();
+    this.sendHandlers.clear();
 
     // Close database adapter last
     await this.adapter.close();
