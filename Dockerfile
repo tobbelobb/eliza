@@ -15,7 +15,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g bun@1.2.5 turbo@2.3.3
+RUN npm install -g bun@1.2.17 turbo@2.3.3
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
@@ -41,7 +41,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g bun@1.2.5 turbo@2.3.3 \
+RUN npm install -g bun@1.2.17 turbo@2.3.3 \
  && bun install -g @elizaos/cli \
  && ln -s /root/.bun/bin/elizaos /usr/local/bin/elizaos
 
