@@ -38,6 +38,10 @@ export class MessageBusService extends Service {
   private boundHandleMessageDeleted: (data: any) => Promise<void>;
   private boundHandleChannelCleared: (data: any) => Promise<void>;
   private subscribedServers: Set<UUID> = new Set();
+  private fetchingChannelIds = false; // Prevent concurrent fetchValidChannelIds calls
+
+  // Static map to track service instances for proper cleanup
+  private static instances = new Map<UUID, MessageBusService>();
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
@@ -49,14 +53,32 @@ export class MessageBusService extends Service {
   }
 
   static async start(runtime: IAgentRuntime): Promise<Service> {
+    // Check if instance already exists and clean it up first
+    if (MessageBusService.instances.has(runtime.agentId)) {
+      const existingService = MessageBusService.instances.get(runtime.agentId);
+      await existingService!.stop();
+      MessageBusService.instances.delete(runtime.agentId);
+      logger.info(`[${runtime.character.name}] MessageBusService: Cleaned up existing instance before restart`);
+    }
+
     const service = new MessageBusService(runtime);
     await service.connectToMessageBus();
+    
+    // Store the instance for proper cleanup
+    MessageBusService.instances.set(runtime.agentId, service);
+    
     return service;
   }
 
   static async stop(runtime: IAgentRuntime): Promise<void> {
-    const service = new MessageBusService(runtime);
-    await service.stop();
+    const service = MessageBusService.instances.get(runtime.agentId);
+    if (service) {
+      await service.stop();
+      MessageBusService.instances.delete(runtime.agentId);
+      logger.info(`[${runtime.character.name}] MessageBusService: Properly stopped and removed instance for agent ${runtime.agentId}`);
+    } else {
+      logger.warn(`[${runtime.character.name}] MessageBusService: No instance found to stop for agent ${runtime.agentId}`);
+    }
   }
 
   private async connectToMessageBus() {
@@ -77,6 +99,13 @@ export class MessageBusService extends Service {
   private validChannelIds: Set<UUID> = new Set();
 
   private async fetchValidChannelIds(): Promise<void> {
+    // Prevent concurrent calls to avoid race conditions and memory issues
+    if (this.fetchingChannelIds) {
+      logger.debug(`[${this.runtime.character.name}] MessageBusService: fetchValidChannelIds already in progress, skipping`);
+      return;
+    }
+    
+    this.fetchingChannelIds = true;
     try {
       const serverApiUrl = this.getCentralMessageServerUrl();
 
@@ -133,6 +162,8 @@ export class MessageBusService extends Service {
         `[${this.runtime.character.name}] MessageBusService: Error in fetchValidChannelIds:`,
         error
       );
+    } finally {
+      this.fetchingChannelIds = false;
     }
   }
 
@@ -761,10 +792,18 @@ export class MessageBusService extends Service {
 
   async stop(): Promise<void> {
     logger.info(`[${this.runtime.character.name}] MessageBusService stopping...`);
+    
+    // Remove all event listeners using the SAME bound method references
     internalMessageBus.off('new_message', this.boundHandleIncomingMessage);
     internalMessageBus.off('server_agent_update', this.boundHandleServerAgentUpdate);
     internalMessageBus.off('message_deleted', this.boundHandleMessageDeleted);
     internalMessageBus.off('channel_cleared', this.boundHandleChannelCleared);
+    
+    // Clear all data structures to free memory
+    this.subscribedServers.clear();
+    this.validChannelIds.clear();
+    
+    logger.info(`[${this.runtime.character.name}] MessageBusService stopped and cleaned up data structures`);
   }
 }
 

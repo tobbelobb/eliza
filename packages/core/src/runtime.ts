@@ -202,33 +202,61 @@ export class AgentRuntime implements IAgentRuntime {
    * Start periodic cleanup of state cache for idle memory management
    */
   private startStateCacheCleanup(): void {
-    // Run cleanup every 5 minutes during idle periods
+    // Run cleanup every 2 minutes for more aggressive memory management
     this.stateCacheCleanupInterval = setInterval(async () => {
       try {
-        // Clean up state cache when it gets large
-        if (this.stateCache.size > this.STATE_CACHE_MAX_SIZE / 2) {
-          const entriesToRemove = Math.floor(this.stateCache.size * 0.2); // Remove 20% when cache is large
+        const memBefore = process.memoryUsage();
+        this.logger.info(`[MEMORY DEBUG] Starting cleanup cycle - RSS: ${Math.round(memBefore.rss / 1024 / 1024)}MB, Heap: ${Math.round(memBefore.heapUsed / 1024 / 1024)}MB`);
+        
+        // More aggressive state cache cleanup - always clean if we have entries
+        const initialCacheSize = this.stateCache.size;
+        if (this.stateCache.size > 50) { // Lower threshold
+          const entriesToRemove = Math.floor(this.stateCache.size * 0.3); // Remove 30% more aggressively
           const keysToRemove = Array.from(this.stateCache.keys()).slice(0, entriesToRemove);
           keysToRemove.forEach((key) => this.stateCache.delete(key));
 
-          this.logger.debug(
-            `State cache cleanup: removed ${entriesToRemove} entries, ${this.stateCache.size} remaining`
+          this.logger.info(
+            `[MEMORY DEBUG] State cache cleanup: removed ${entriesToRemove} entries, ${this.stateCache.size} remaining (was ${initialCacheSize})`
           );
         }
 
         // Clean up database-level cache and embeddings if adapter supports it
         if (this.adapter && typeof (this.adapter as any).cleanupExpiredCache === 'function') {
-          await (this.adapter as any).cleanupExpiredCache(this.agentId);
+          const cacheDeleted = await (this.adapter as any).cleanupExpiredCache(this.agentId);
+          if (cacheDeleted > 0) {
+            this.logger.info(`[MEMORY DEBUG] Cleaned up ${cacheDeleted} expired cache entries`);
+          }
         }
 
-        // Clean up old embeddings (keep 7 days by default)
+        // Clean up old embeddings (keep 3 days instead of 7 for more aggressive cleanup)
         if (this.adapter && typeof (this.adapter as any).cleanupOldEmbeddings === 'function') {
-          await (this.adapter as any).cleanupOldEmbeddings(this.agentId, 7);
+          const embeddingsDeleted = await (this.adapter as any).cleanupOldEmbeddings(this.agentId, 3);
+          if (embeddingsDeleted > 0) {
+            this.logger.info(`[MEMORY DEBUG] Cleaned up ${embeddingsDeleted} old embeddings`);
+          }
         }
+
+        // Clear any accumulated context that might be holding references
+        this.currentActionContext = undefined;
+        
+        // Force garbage collection if available
+        if (typeof global.gc === 'function') {
+          global.gc();
+          this.logger.info(`[MEMORY DEBUG] Forced garbage collection`);
+        } else if (typeof (globalThis as any).Bun !== 'undefined' && (globalThis as any).Bun.gc) {
+          (globalThis as any).Bun.gc(true);
+          this.logger.info(`[MEMORY DEBUG] Forced Bun garbage collection`);
+        }
+
+        const memAfter = process.memoryUsage();
+        const rssDiff = memAfter.rss - memBefore.rss;
+        const heapDiff = memAfter.heapUsed - memBefore.heapUsed;
+        
+        this.logger.info(`[MEMORY DEBUG] Cleanup complete - RSS: ${Math.round(memAfter.rss / 1024 / 1024)}MB (${rssDiff > 0 ? '+' : ''}${Math.round(rssDiff / 1024 / 1024)}MB), Heap: ${Math.round(memAfter.heapUsed / 1024 / 1024)}MB (${heapDiff > 0 ? '+' : ''}${Math.round(heapDiff / 1024 / 1024)}MB)`);
       } catch (error) {
         this.logger.error('Error during periodic cleanup:', error);
       }
-    }, 300000); // 5 minutes
+    }, 120000); // 2 minutes instead of 5
   }
 
   async registerPlugin(plugin: Plugin): Promise<void> {
@@ -334,6 +362,14 @@ export class AgentRuntime implements IAgentRuntime {
 
   async stop() {
     this.logger.debug(`runtime::stop - character ${this.character.name}`);
+    
+    // CRITICAL FIX: Clear the memory cleanup interval timer
+    if (this.stateCacheCleanupInterval) {
+      clearInterval(this.stateCacheCleanupInterval);
+      this.stateCacheCleanupInterval = undefined;
+      this.logger.info(`[MEMORY DEBUG] Cleared cleanup interval timer for agent ${this.character.name}`);
+    }
+    
     for (const [serviceName, service] of this.services) {
       this.logger.debug(`runtime::stop - requesting service stop for ${serviceName}`);
       await service.stop();
