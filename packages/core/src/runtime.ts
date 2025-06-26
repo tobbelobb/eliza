@@ -89,6 +89,7 @@ export class AgentRuntime implements IAgentRuntime {
       text: string;
     }
   >();
+  private readonly STATE_CACHE_MAX_SIZE = 1000; // Limit cache to 1000 entries
   readonly fetch = fetch;
   services = new Map<ServiceTypeName, Service>();
   private serviceTypes = new Map<ServiceTypeName, typeof Service>();
@@ -1098,6 +1099,15 @@ export class AgentRuntime implements IAgentRuntime {
       },
       text: providersText,
     } as State;
+
+    // Implement LRU-style cache cleanup to prevent unbounded memory growth
+    if (this.stateCache.size >= this.STATE_CACHE_MAX_SIZE) {
+      // Remove oldest entries (first 100 entries) when cache is full
+      const entriesToRemove = Math.floor(this.STATE_CACHE_MAX_SIZE * 0.1);
+      const keysToRemove = Array.from(this.stateCache.keys()).slice(0, entriesToRemove);
+      keysToRemove.forEach((key) => this.stateCache.delete(key));
+    }
+
     this.stateCache.set(message.id, newState);
     return newState;
   }
@@ -1425,6 +1435,14 @@ export class AgentRuntime implements IAgentRuntime {
     await this.adapter.init();
   }
   async close(): Promise<void> {
+    // Stop all services to clean up timers, intervals, and other resources
+    await this.stop();
+
+    // Clear memory caches to prevent accumulation
+    this.stateCache.clear();
+    this.eventHandlers.clear();
+
+    // Close database adapter last
     await this.adapter.close();
   }
   async getAgent(agentId: UUID): Promise<Agent | null> {
