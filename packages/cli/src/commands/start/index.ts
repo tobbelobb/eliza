@@ -24,13 +24,18 @@ export const start = new Command()
   .option('--character <paths...>', 'Character file(s) to use')
   .hook('preAction', async () => {
     await displayBanner();
-    const MIN = 60_000;
+    const INTERVAL_MS = 600_000;
     setInterval(() => {
-      Bun.gc(true);
-      if (process.env.DEBUG_MEMORY === "1") {
-        logger.debug({ rss: process.memoryUsage().rss }, "manual GC tick");
+      if (typeof Bun !== 'undefined' && Bun.gc) {
+        Bun.gc(true);
+      } else if (global.gc) {
+        // Fall back to Node.js garbage collection if available
+        global.gc();
       }
-    }, 10 * MIN);
+      if (process.env.DEBUG_MEMORY === "1") {
+        logger.info({ rss: process.memoryUsage().rss }, "manual GC tick");
+      }
+    }, INTERVAL_MS);
   })
   .action(async (options: StartOptions & { character?: string[] }) => {
     try {
