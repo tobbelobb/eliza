@@ -215,6 +215,13 @@ export class SocketIORouter {
       return;
     }
 
+    // FIX PART 1: Associate the socket with the sending agent if not already done.
+    // This ensures that when the socket disconnects, we know which agent to unregister.
+    if (senderId && validateUuid(senderId) && !this.connections.has(socket.id)) {
+      this.connections.set(socket.id, senderId as UUID);
+      logger.info(`[SocketIO] Associated socket ${socket.id} with agent ${senderId} during message submission.`);
+    }
+
     try {
       // Check if this is a DM channel and emit ENTITY_JOINED for proper world setup
       const isDmForWorldSetup = metadata?.isDm || metadata?.channelType === ChannelType.DM;
@@ -477,6 +484,9 @@ export class SocketIORouter {
       logger.info(
         `[SocketIO] Client ${socket.id} (associated with agent ${agentIdAssociated}) disconnected.`
       );
+      // FIX PART 2: Unregister the agent from the main server instance to prevent memory leaks.
+      // This will now be called correctly because of the fix in handleMessageSubmission.
+      this.serverInstance.unregisterAgent(agentIdAssociated);
     } else {
       logger.info(`[SocketIO] Client ${socket.id} disconnected.`);
     }

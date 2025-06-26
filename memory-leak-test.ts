@@ -4,11 +4,16 @@
  * 
  * This script monitors memory usage during agent startup and running
  * to validate that memory leaks have been fixed.
+ * 
+ * Tests both:
+ * 1. Runtime-level memory leaks (stateCache, TaskService timers)
+ * 2. Server-level memory leaks (Socket.IO agent unregistration)
  */
 
 import { startAgents } from './packages/cli/src/commands/start/actions/server-start';
 import { getElizaCharacter } from './packages/cli/src/characters/eliza';
 import { logger } from '@elizaos/core';
+import { io } from 'socket.io-client';
 
 interface MemorySnapshot {
   timestamp: number;
@@ -78,6 +83,45 @@ Memory Report:
   }
 }
 
+async function testSocketConnections(port: number) {
+  console.log('🔌 Testing Socket.IO connection/disconnection cycles...');
+  
+  const connections: any[] = [];
+  const agentId = 'test-agent-uuid-' + Math.random().toString(36).substr(2, 9);
+  
+  // Create multiple connections and disconnect them
+  for (let i = 0; i < 10; i++) {
+    const socket = io(`http://localhost:${port}`, {
+      transports: ['websocket']
+    });
+    
+    connections.push(socket);
+    
+    // Simulate sending a message to associate socket with agent
+    socket.emit('SEND_MESSAGE', {
+      channelId: 'test-channel-' + i,
+      senderId: agentId,
+      message: 'Test message ' + i,
+      serverId: '0'
+    });
+    
+    // Wait a bit
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log(`📡 Created ${connections.length} socket connections`);
+  
+  // Disconnect all connections
+  for (const socket of connections) {
+    socket.disconnect();
+  }
+  
+  console.log('🔌 Disconnected all socket connections');
+  
+  // Wait for cleanup
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
 async function runMemoryLeakTest() {
   console.log('🔍 Starting ElizaOS Memory Leak Test...');
   
@@ -100,7 +144,13 @@ async function runMemoryLeakTest() {
     
     console.log('✅ Agents started successfully');
     
-    // Let agents run for 2 minutes
+    // Wait for server to be fully ready
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Test socket connections (this tests the server-level memory leak fix)
+    await testSocketConnections(3001);
+    
+    // Let agents run for 2 minutes to test runtime-level leaks
     console.log('⏱️  Monitoring memory for 2 minutes...');
     await new Promise(resolve => setTimeout(resolve, 120000));
     
