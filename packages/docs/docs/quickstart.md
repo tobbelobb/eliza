@@ -64,9 +64,7 @@ Edit `my-assistant.json` to customize your agent:
 ```json
 {
   "name": "MyAssistant",
-  "plugins": [
-    "@elizaos/plugin-openai"
-  ],
+  "plugins": ["@elizaos/plugin-openai"],
   "system": "You are a helpful AI assistant.",
   "bio": ["Helpful", "Knowledgeable", "Friendly"],
   "messageExamples": [

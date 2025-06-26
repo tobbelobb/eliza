@@ -32,8 +32,8 @@ export const start = new Command()
         // Fall back to Node.js garbage collection if available
         global.gc();
       }
-      if (process.env.DEBUG_MEMORY === "1") {
-        logger.info({ rss: process.memoryUsage().rss }, "manual GC tick");
+      if (process.env.DEBUG_MEMORY === '1') {
+        logger.info({ rss: process.memoryUsage().rss }, 'manual GC tick');
       }
     }, INTERVAL_MS);
   })

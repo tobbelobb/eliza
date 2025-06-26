@@ -24,14 +24,14 @@ elizaos plugins [options] [command]
 
 ## Subcommands
 
-| Subcommand          | Aliases               | Description                                                                        | Arguments                                                                 | Options                                                                           |
-| ------------------- | --------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `list`              | `l`, `ls`             | List available plugins in the registry (shows v1.x plugins by default)             |                                                                           | `--all` (detailed version info), `--v0` (v0.x compatible only)                    |
-| `add`               | `install`             | Add a plugin to character file(s)                                                  | `<plugin>` (plugins name e.g., "abc", "plugin-abc", "elizaos/plugin-abc") | `-c, --character <paths...>`, `-s, --skip-env-prompt`, `--skip-verification`     |
-| `installed-plugins` |                       | List plugins found in character files                                              |                                                                           | `-c, --character <paths...>`                                                      |
-| `remove`            | `delete`, `del`, `rm` | Remove a plugin from character file(s)                                             | `<plugin>` (plugins name e.g., "abc", "plugin-abc", "elizaos/plugin-abc") | `-c, --character <paths...>`                                                      |
-| `upgrade`           |                       | Upgrade a plugin from version 0.x to 1.x using AI-powered migration                | `<path>` (GitHub repository URL or local folder path)                     | `--api-key`, `--skip-tests`, `--skip-validation`                                  |
-| `generate`          |                       | Generate a new plugin using AI-powered code generation                             |                                                                           | `--api-key`, `--skip-tests`, `--skip-validation`, `--skip-prompts`, `--spec-file` |
+| Subcommand          | Aliases               | Description                                                            | Arguments                                                                 | Options                                                                           |
+| ------------------- | --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `list`              | `l`, `ls`             | List available plugins in the registry (shows v1.x plugins by default) |                                                                           | `--all` (detailed version info), `--v0` (v0.x compatible only)                    |
+| `add`               | `install`             | Add a plugin to character file(s)                                      | `<plugin>` (plugins name e.g., "abc", "plugin-abc", "elizaos/plugin-abc") | `-c, --character <paths...>`, `-s, --skip-env-prompt`, `--skip-verification`      |
+| `installed-plugins` |                       | List plugins found in character files                                  |                                                                           | `-c, --character <paths...>`                                                      |
+| `remove`            | `delete`, `del`, `rm` | Remove a plugin from character file(s)                                 | `<plugin>` (plugins name e.g., "abc", "plugin-abc", "elizaos/plugin-abc") | `-c, --character <paths...>`                                                      |
+| `upgrade`           |                       | Upgrade a plugin from version 0.x to 1.x using AI-powered migration    | `<path>` (GitHub repository URL or local folder path)                     | `--api-key`, `--skip-tests`, `--skip-validation`                                  |
+| `generate`          |                       | Generate a new plugin using AI-powered code generation                 |                                                                           | `--api-key`, `--skip-tests`, `--skip-validation`, `--skip-prompts`, `--spec-file` |
 
 </TabItem>
 <TabItem value="examples" label="Examples">
@@ -156,11 +156,7 @@ ElizaOS uses a character-centric approach to plugin management. Plugins are spec
 ```json
 {
   "name": "MyAssistant",
-  "plugins": [
-    "@elizaos/plugin-openai",
-    "@elizaos/plugin-discord",
-    "./path/to/local/plugin"
-  ],
+  "plugins": ["@elizaos/plugin-openai", "@elizaos/plugin-discord", "./path/to/local/plugin"],
   "settings": {
     // Character-specific settings
   }

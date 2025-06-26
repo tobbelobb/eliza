@@ -7,7 +7,17 @@ export class PostgresConnectionManager {
   private db: NodePgDatabase;
 
   constructor(connectionString: string) {
-    this.pool = new Pool({ connectionString });
+    // Configure connection pool with memory-optimized settings for idle state
+    this.pool = new Pool({
+      connectionString,
+      max: 5, // Reduce from default 20 to limit memory usage
+      min: 1, // Minimum connections to keep alive
+      idleTimeoutMillis: 10000, // Close idle connections after 10 seconds
+      connectionTimeoutMillis: 2000, // Timeout for new connections
+      statement_timeout: 60000, // Statement timeout to prevent hanging queries
+      query_timeout: 60000, // Query timeout
+      application_name: 'elizaos-agent', // For connection identification
+    });
     this.db = drizzle(this.pool as any);
   }
 

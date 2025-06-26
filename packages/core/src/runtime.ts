@@ -108,6 +108,7 @@ export class AgentRuntime implements IAgentRuntime {
   private settings: RuntimeSettings;
   private servicesInitQueue = new Set<typeof Service>();
   private currentRunId?: UUID; // Track the current run ID
+  private stateCacheCleanupInterval?: NodeJS.Timeout; // Track cache cleanup timer
   private currentActionContext?: {
     // Track current action execution context
     actionName: string;
@@ -195,6 +196,39 @@ export class AgentRuntime implements IAgentRuntime {
       this.currentRunId = this.createRunId();
     }
     return this.currentRunId;
+  }
+
+  /**
+   * Start periodic cleanup of state cache for idle memory management
+   */
+  private startStateCacheCleanup(): void {
+    // Run cleanup every 5 minutes during idle periods
+    this.stateCacheCleanupInterval = setInterval(async () => {
+      try {
+        // Clean up state cache when it gets large
+        if (this.stateCache.size > this.STATE_CACHE_MAX_SIZE / 2) {
+          const entriesToRemove = Math.floor(this.stateCache.size * 0.2); // Remove 20% when cache is large
+          const keysToRemove = Array.from(this.stateCache.keys()).slice(0, entriesToRemove);
+          keysToRemove.forEach((key) => this.stateCache.delete(key));
+
+          this.logger.debug(
+            `State cache cleanup: removed ${entriesToRemove} entries, ${this.stateCache.size} remaining`
+          );
+        }
+
+        // Clean up database-level cache and embeddings if adapter supports it
+        if (this.adapter && typeof (this.adapter as any).cleanupExpiredCache === 'function') {
+          await (this.adapter as any).cleanupExpiredCache(this.agentId);
+        }
+
+        // Clean up old embeddings (keep 7 days by default)
+        if (this.adapter && typeof (this.adapter as any).cleanupOldEmbeddings === 'function') {
+          await (this.adapter as any).cleanupOldEmbeddings(this.agentId, 7);
+        }
+      } catch (error) {
+        this.logger.error('Error during periodic cleanup:', error);
+      }
+    }, 300000); // 5 minutes
   }
 
   async registerPlugin(plugin: Plugin): Promise<void> {
@@ -410,6 +444,12 @@ export class AgentRuntime implements IAgentRuntime {
     for (const service of this.servicesInitQueue) {
       await this.registerService(service);
     }
+    // Clear service initialization queue to free memory
+    this.servicesInitQueue.clear();
+
+    // Start state cache cleanup interval for idle memory management
+    this.startStateCacheCleanup();
+
     this.isInitialized = true;
   }
 
@@ -437,6 +477,15 @@ export class AgentRuntime implements IAgentRuntime {
           this.logger.error(`Failed to migrate plugin ${p.name}:`, error);
           // Decide if you want to throw or continue
         }
+      }
+    }
+
+    // Clear plugin schema references after migrations to free memory
+    // Schema objects contain heavy Drizzle ORM references that can be GC'd after migration
+    for (const p of pluginsWithSchemas) {
+      if (p.schema) {
+        this.logger.debug(`Clearing schema reference for plugin: ${p.name}`);
+        delete (p as any).schema; // Remove heavy Drizzle ORM objects
       }
     }
   }
@@ -1437,6 +1486,12 @@ export class AgentRuntime implements IAgentRuntime {
   async close(): Promise<void> {
     // Stop all services to clean up timers, intervals, and other resources
     await this.stop();
+
+    // Stop state cache cleanup interval
+    if (this.stateCacheCleanupInterval) {
+      clearInterval(this.stateCacheCleanupInterval);
+      this.stateCacheCleanupInterval = undefined;
+    }
 
     // Clear memory caches to prevent accumulation
     this.stateCache.clear();

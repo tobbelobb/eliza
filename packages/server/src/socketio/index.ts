@@ -219,7 +219,9 @@ export class SocketIORouter {
     // This ensures that when the socket disconnects, we know which agent to unregister.
     if (senderId && validateUuid(senderId) && !this.connections.has(socket.id)) {
       this.connections.set(socket.id, senderId as UUID);
-      logger.info(`[SocketIO] Associated socket ${socket.id} with agent ${senderId} during message submission.`);
+      logger.info(
+        `[SocketIO] Associated socket ${socket.id} with agent ${senderId} during message submission.`
+      );
     }
 
     try {

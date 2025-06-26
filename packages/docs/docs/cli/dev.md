@@ -120,7 +120,7 @@ Plugins are loaded from character files during development:
   "name": "DevAssistant",
   "plugins": [
     "@elizaos/plugin-openai",
-    "./path/to/local/plugin"  // Local plugins supported
+    "./path/to/local/plugin" // Local plugins supported
   ]
 }
 ```
@@ -235,10 +235,11 @@ Multiple character files can be specified using:
 When developing plugins locally:
 
 1. Create your plugin within your project or in a separate directory:
+
    ```bash
    # Option 1: Create plugin within project
    elizaos create --type plugin my-plugin
-   
+
    # Option 2: Create plugin in separate directory
    cd ../
    elizaos create --type plugin my-plugin
@@ -246,12 +247,13 @@ When developing plugins locally:
    ```
 
 2. Reference it in your character file:
+
    ```json
    {
      "plugins": [
-       "./plugin-my-plugin",      // Plugin within project
-       "../plugin-my-plugin",     // Plugin in sibling directory
-       "@elizaos/plugin-openai"    // Published plugin
+       "./plugin-my-plugin", // Plugin within project
+       "../plugin-my-plugin", // Plugin in sibling directory
+       "@elizaos/plugin-openai" // Published plugin
      ]
    }
    ```

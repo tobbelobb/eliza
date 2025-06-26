@@ -164,11 +164,7 @@ Manage ElizaOS plugins through character configurations.
 ```json
 {
   "name": "MyAssistant",
-  "plugins": [
-    "@elizaos/plugin-openai",
-    "@elizaos/plugin-discord",
-    "./path/to/local/plugin"
-  ],
+  "plugins": ["@elizaos/plugin-openai", "@elizaos/plugin-discord", "./path/to/local/plugin"],
   "settings": {
     // Character-specific settings
   }
@@ -237,10 +233,11 @@ Manage ElizaOS agents.
       - `-p, --port <port>`: Port to listen on
 
 **Character Specification:**
+
 - **Multiple formats supported**: Space-separated, comma-separated, or mixed
 - **Auto-extension**: `.json` extension added automatically if missing
 - **Path resolution**: Supports local files, URLs, and character names
-- **Examples**: 
+- **Examples**:
   - `elizaos agent start -c bobby,billy` (comma-separated)
   - `elizaos agent start -c bobby billy` (space-separated)
   - `elizaos agent get -c ./characters/bobby.json https://example.com/billy.json`
@@ -761,15 +758,9 @@ Projects contain agent configurations and code for building agent-based applicat
    ```json
    {
      "name": "My Assistant",
-     "plugins": [
-       "@elizaos/plugin-openai",
-       "./path/to/local/plugin"
-     ],
+     "plugins": ["@elizaos/plugin-openai", "./path/to/local/plugin"],
      "system": "You are a helpful assistant...",
-     "bio": [
-       "Helpful and knowledgeable",
-       "Communicates clearly and concisely"
-     ],
+     "bio": ["Helpful and knowledgeable", "Communicates clearly and concisely"],
      "messageExamples": [
        // Example conversations
      ]

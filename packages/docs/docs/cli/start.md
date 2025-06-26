@@ -150,10 +150,7 @@ Plugins are loaded exclusively from character files. Each character specifies it
 ```json
 {
   "name": "MyAssistant",
-  "plugins": [
-    "@elizaos/plugin-openai",
-    "@elizaos/plugin-discord"
-  ],
+  "plugins": ["@elizaos/plugin-openai", "@elizaos/plugin-discord"]
   // ... other character configuration
 }
 ```

@@ -51,7 +51,7 @@ describe('ElizaOS Plugin Commands', () => {
       settings: {
         // Basic settings for the test character
         language: 'en',
-      }
+      },
     };
     await writeFile(characterFile, JSON.stringify(testCharacter, null, 2));
     console.log('Created test character file at:', characterFile);
@@ -239,7 +239,7 @@ describe('ElizaOS Plugin Commands', () => {
   it(
     'plugins installed-plugins shows installed plugins',
     async () => {
-      const result = execSync(`${elizaosCmd} plugins installed-plugins -c test-character.json`, { 
+      const result = execSync(`${elizaosCmd} plugins installed-plugins -c test-character.json`, {
         encoding: 'utf8',
         cwd: projectDir,
       });
@@ -298,11 +298,14 @@ describe('ElizaOS Plugin Commands', () => {
 
         // Add all plugins first
         for (const plugin of plugins) {
-          execSync(`${elizaosCmd} plugins add ${plugin} -c test-character.json --skip-env-prompt --skip-verification`, {
-            stdio: 'pipe',
-            timeout: TEST_TIMEOUTS.PLUGIN_INSTALLATION,
-            cwd: projectDir,
-          });
+          execSync(
+            `${elizaosCmd} plugins add ${plugin} -c test-character.json --skip-env-prompt --skip-verification`,
+            {
+              stdio: 'pipe',
+              timeout: TEST_TIMEOUTS.PLUGIN_INSTALLATION,
+              cwd: projectDir,
+            }
+          );
         }
 
         // Test different remove aliases

@@ -247,12 +247,12 @@ describe('ElizaOS Agent Commands', () => {
 
   afterAll(async () => {
     console.log('[CLEANUP] Starting test cleanup...');
-    
+
     // Clean up the server process
     if (serverProcess) {
       try {
         console.log(`[CLEANUP] Killing server process PID: ${serverProcess.pid}`);
-        
+
         // Kill the process group to ensure all child processes are terminated
         if (process.platform !== 'win32' && serverProcess.pid) {
           try {
@@ -270,7 +270,7 @@ describe('ElizaOS Agent Commands', () => {
         if (serverProcess.exited) {
           await Promise.race([
             serverProcess.exited,
-            new Promise((resolve) => setTimeout(resolve, 3000))
+            new Promise((resolve) => setTimeout(resolve, 3000)),
           ]);
         }
 
@@ -288,7 +288,7 @@ describe('ElizaOS Agent Commands', () => {
     // Kill any remaining processes on the test port
     console.log(`[CLEANUP] Killing any remaining processes on port ${testServerPort}...`);
     await killProcessOnPort(parseInt(testServerPort, 10));
-    
+
     // Additional cleanup for any elizaos processes that might be hanging
     if (process.platform !== 'win32') {
       try {
@@ -309,7 +309,7 @@ describe('ElizaOS Agent Commands', () => {
         // Ignore cleanup errors
       }
     }
-    
+
     console.log('[CLEANUP] Test cleanup complete');
   });
 

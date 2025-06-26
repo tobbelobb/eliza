@@ -24,15 +24,15 @@ elizaos agent [options] [command]
 
 ## Subcommands
 
-| Subcommand       | Aliases | Description                             | Required Options                                  | Additional Options                                                           |
-| ---------------- | ------- | --------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `list`           | `ls`    | List available agents                   |                                                   | `--format <format>`, `-r, --remote-url <url>`, `-p, --port <port>`           |
-| `get`            | `g`     | Get agent details                       | `-c, --character <paths...>`                      | `--format <format>`, `-o, --output [file]`, `-r, --remote-url`, `-p, --port` |
-| `start`          | `s`     | Start agent(s) with character profile(s) | `-c, --character <paths...>`                      | `-r, --remote-url <url>`, `-p, --port <port>`                                |
-| `stop`           | `st`    | Stop agent(s)                           | `-c, --character <paths...>`                      | `-r, --remote-url <url>`, `-p, --port <port>`                                |
-| `remove`         | `rm`    | Remove agent(s)                         | `-c, --character <paths...>`                      | `-r, --remote-url <url>`, `-p, --port <port>`                                |
-| `set`            |         | Update agent configuration              | `-c, --character <path>` AND one of: `--config` OR `--file` | `-r, --remote-url <url>`, `-p, --port <port>`                                |
-| `clear-memories` |         | Clear agent memories                    | `-c, --character <paths...>`                      | `-r, --remote-url <url>`, `-p, --port <port>`                                |
+| Subcommand       | Aliases | Description                              | Required Options                                            | Additional Options                                                           |
+| ---------------- | ------- | ---------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `list`           | `ls`    | List available agents                    |                                                             | `--format <format>`, `-r, --remote-url <url>`, `-p, --port <port>`           |
+| `get`            | `g`     | Get agent details                        | `-c, --character <paths...>`                                | `--format <format>`, `-o, --output [file]`, `-r, --remote-url`, `-p, --port` |
+| `start`          | `s`     | Start agent(s) with character profile(s) | `-c, --character <paths...>`                                | `-r, --remote-url <url>`, `-p, --port <port>`                                |
+| `stop`           | `st`    | Stop agent(s)                            | `-c, --character <paths...>`                                | `-r, --remote-url <url>`, `-p, --port <port>`                                |
+| `remove`         | `rm`    | Remove agent(s)                          | `-c, --character <paths...>`                                | `-r, --remote-url <url>`, `-p, --port <port>`                                |
+| `set`            |         | Update agent configuration               | `-c, --character <path>` AND one of: `--config` OR `--file` | `-r, --remote-url <url>`, `-p, --port <port>`                                |
+| `clear-memories` |         | Clear agent memories                     | `-c, --character <paths...>`                                | `-r, --remote-url <url>`, `-p, --port <port>`                                |
 
 ## Options Reference
 
@@ -49,14 +49,14 @@ elizaos agent [options] [command]
 
 ### Character Specification Options
 
-- `-c, --character <paths...>`: Character name(s), file path(s), or URL(s) 
+- `-c, --character <paths...>`: Character name(s), file path(s), or URL(s)
   - **Multiple characters supported** (except for `set` command)
   - **Formats**: Space-separated, comma-separated, or mixed
   - **Auto-extension**: `.json` extension added automatically if missing
   - **Path resolution**: Supports local files, URLs, and character names
-  - **Examples**: 
+  - **Examples**:
     - `bobby,billy` (comma-separated)
-    - `bobby billy` (space-separated)  
+    - `bobby billy` (space-separated)
     - `./characters/bobby.json https://example.com/billy.json` (mixed formats)
 
 ### Set Specific Options
@@ -149,6 +149,7 @@ elizaos agent start --character eliza --port 4000
 
 **Character Resolution:**
 The CLI supports multiple formats and automatically resolves character paths:
+
 - **Character names**: `eliza`, `bobby` (looks up existing agents)
 - **Local files**: `./characters/eliza.json`, `eliza.json`
 - **URLs**: `https://example.com/characters/eliza.json`
@@ -304,6 +305,7 @@ Characters can be specified using multiple formats:
 4. **Multiple Characters**: Space-separated or comma-separated lists (e.g., "eliza,bobby" or "eliza bobby")
 
 **Features:**
+
 - **Auto-extension**: `.json` extension added automatically if missing
 - **Flexible parsing**: Supports mixed quotes, spaces, and commas
 - **Path resolution**: Automatic resolution of character file locations

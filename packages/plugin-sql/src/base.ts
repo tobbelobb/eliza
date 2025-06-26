@@ -3334,6 +3334,66 @@ export abstract class BaseDrizzleAdapter extends DatabaseAdapter<any> {
       );
     });
   }
+
+  /**
+   * Clean up old embeddings to free memory.
+   * Removes embeddings older than the specified number of days for the given agent.
+   * @param {UUID} agentId - The agent ID to clean embeddings for
+   * @param {number} retentionDays - Number of days to retain embeddings (default: 7)
+   * @returns {Promise<number>} Number of embeddings deleted
+   */
+  async cleanupOldEmbeddings(agentId: UUID, retentionDays: number = 7): Promise<number> {
+    return this.withDatabase(async () => {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+      // First get the memory IDs that will be cleaned up
+      const oldMemories = await this.db
+        .select({ id: memoryTable.id })
+        .from(memoryTable)
+        .where(and(eq(memoryTable.agentId, agentId), lt(memoryTable.createdAt, cutoffDate)));
+
+      if (oldMemories.length === 0) {
+        logger.debug(`No old embeddings found for agent ${agentId}`);
+        return 0;
+      }
+
+      const memoryIds = oldMemories.map((m) => m.id);
+
+      // Delete embeddings for these memories
+      const deletedEmbeddings = await this.db
+        .delete(embeddingTable)
+        .where(inArray(embeddingTable.memoryId, memoryIds));
+
+      logger.info(
+        `Cleaned up ${oldMemories.length} old embeddings for agent ${agentId} (older than ${retentionDays} days)`
+      );
+      return oldMemories.length;
+    });
+  }
+
+  /**
+   * Clean up cache entries that have expired.
+   * @param {UUID} agentId - The agent ID to clean cache for
+   * @returns {Promise<number>} Number of cache entries deleted
+   */
+  async cleanupExpiredCache(agentId: UUID): Promise<number> {
+    return this.withDatabase(async () => {
+      const now = new Date();
+
+      const deletedEntries = await this.db
+        .delete(cacheTable)
+        .where(and(eq(cacheTable.agentId, agentId), lt(cacheTable.expiresAt, now)));
+
+      if ((deletedEntries as any).rowCount > 0) {
+        logger.debug(
+          `Cleaned up ${(deletedEntries as any).rowCount} expired cache entries for agent ${agentId}`
+        );
+      }
+
+      return (deletedEntries as any).rowCount || 0;
+    });
+  }
 }
 
 // Import tables at the end to avoid circular dependencies

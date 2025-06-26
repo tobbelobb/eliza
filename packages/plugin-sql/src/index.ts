@@ -33,6 +33,54 @@ if (!globalSymbols[GLOBAL_SINGLETONS]) {
 const globalSingletons = globalSymbols[GLOBAL_SINGLETONS];
 
 /**
+ * Cleanup function to close all global singleton connections
+ * This should be called on application shutdown
+ */
+export async function cleanupGlobalSingletons(): Promise<void> {
+  logger.info('Cleaning up global SQL plugin singletons...');
+
+  if (globalSingletons.postgresConnectionManager) {
+    try {
+      await globalSingletons.postgresConnectionManager.close();
+      logger.debug('Postgres connection manager closed');
+    } catch (error) {
+      logger.error('Error closing Postgres connection manager:', error);
+    }
+    delete globalSingletons.postgresConnectionManager;
+  }
+
+  if (globalSingletons.pgLiteClientManager) {
+    try {
+      await globalSingletons.pgLiteClientManager.close();
+      logger.debug('PGLite client manager closed');
+    } catch (error) {
+      logger.error('Error closing PGLite client manager:', error);
+    }
+    delete globalSingletons.pgLiteClientManager;
+  }
+
+  logger.info('Global SQL plugin singletons cleanup completed');
+}
+
+// Register cleanup handlers for graceful shutdown
+if (typeof process !== 'undefined') {
+  const handleShutdown = async (signal: string) => {
+    logger.info(`Received ${signal}, cleaning up SQL plugin resources...`);
+    await cleanupGlobalSingletons();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+  process.on('beforeExit', () => {
+    // Don't use async here as it may not complete
+    cleanupGlobalSingletons().catch((error) =>
+      console.error('Error during beforeExit cleanup:', error)
+    );
+  });
+}
+
+/**
  * Creates a database adapter based on the provided configuration.
  * If a postgresUrl is provided in the config, a PgDatabaseAdapter is initialized using the PostgresConnectionManager.
  * If no postgresUrl is provided, a PgliteDatabaseAdapter is initialized using PGliteClientManager with the dataDir from the config.

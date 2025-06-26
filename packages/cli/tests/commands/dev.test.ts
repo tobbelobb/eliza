@@ -116,7 +116,7 @@ describe('ElizaOS Dev Commands', () => {
 
   afterAll(async () => {
     console.log('[CLEANUP] Starting final test cleanup...');
-    
+
     // Kill any remaining processes
     for (const proc of runningProcesses) {
       if (proc && !proc.killed && proc.exitCode === null) {
@@ -128,7 +128,7 @@ describe('ElizaOS Dev Commands', () => {
         }
       }
     }
-    
+
     // Additional cleanup for any dev processes that might be hanging
     if (process.platform !== 'win32') {
       try {
@@ -150,7 +150,7 @@ describe('ElizaOS Dev Commands', () => {
         // Ignore cleanup errors
       }
     }
-    
+
     console.log('[CLEANUP] Final cleanup complete');
   });
 
